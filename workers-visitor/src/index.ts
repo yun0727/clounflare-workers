@@ -1,16 +1,10 @@
 export interface Env {
-  // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
   DB: KVNamespace;
-  //
-  // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-  // MY_DURABLE_OBJECT: DurableObjectNamespace;
-  //
-  // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-  // MY_BUCKET: R2Bucket;
+  COUNTER: DurableObjectNamespace;
 }
+
 // @ts-ignore
 import home from "./home.html";
-import { makeBadge } from "./utils";
 
 function handleHome() {
   return new Response(home, {
@@ -19,40 +13,32 @@ function handleHome() {
     },
   });
 }
-
 function handleNotFound() {
   return new Response(null, {
     status: 404,
   });
 }
 
-function handleBadRequest() {
-  return new Response(null, {
-    status: 400,
-  });
-}
-
-async function handleVisit(searchParams: URLSearchParams, env: Env) {
-  const page = searchParams.get("page");
-	console.log("searchParams : ",searchParams)
-	console.log("page : ",page)
-  if (!page) {
-		console.log(page)
-    return handleBadRequest();
+export class CounterObject {
+  counter: number;
+  constructor() {
+    this.counter = 0;
   }
-  const kvPage = await env.DB.get(page);
-  let value = 1;
-  if (!kvPage) {
-    await env.DB.put(page, value + "");
-  } else {
-    value = parseInt(kvPage) + 1;
-    await env.DB.put(page, value + "");
+  async fetch(request: Request) {
+    const { pathname } = new URL(request.url);
+    switch (pathname) {
+      case "/":
+        return new Response(this.counter);
+      case "/+":
+        this.counter++;
+        return new Response(this.counter);
+      case "/-":
+        this.counter--;
+        return new Response(this.counter);
+      default:
+        return handleNotFound();
+    }
   }
-  return new Response(makeBadge(value), {
-    headers: {
-      "Content-Type": "image/svg+xml;charset=utf-8",
-    },
-  });
 }
 
 export default {
@@ -61,18 +47,9 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<Response> {
-    const { pathname, searchParams } = new URL(request.url);
-		console.log("pathname:",pathname)
-		console.log("request.url:",request.url)
-		console.log("searchParams:",searchParams)
-    console.log("-----------")
-    switch (pathname) {
-      case "/":
-        return handleHome();
-      case "/visit":
-        return handleVisit(searchParams, env);
-      default:
-        return handleNotFound();
-    }
+    const id = env.COUNTER.idFromName("counter");
+    const durableObject = env.COUNTER.get(id);
+    const response = await durableObject.fetch(request);
+    return response;
   },
 };

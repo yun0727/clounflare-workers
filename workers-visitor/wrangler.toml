@@ -6,6 +6,11 @@ kv_namespaces = [
   { binding = "DB", id = "8b698c87eb4d412ca7c2d4f12b4060aa", preview_id = "9ba4ccf48bf8455ab6c174774032919f" }
 ]
 
+[durable_objects]
+bindings=[
+  {name="COUNTER", class_name="CounterObject"}
+]
+
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
 # Docs: https://developers.cloudflare.com/workers/platform/environment-variables
