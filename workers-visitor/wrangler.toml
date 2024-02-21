@@ -8,9 +8,12 @@ kv_namespaces = [
 
 [durable_objects]
 bindings=[
-  {name="COUNTER", class_name="CounterObject"}
+  {name="CHAT", class_name="ChatRoom"}
 ]
-
+[[migrations]]
+        tag = "v1" # Should be unique for each entry
+        new_classes = ["ChatRoom"]
+        
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
 # Docs: https://developers.cloudflare.com/workers/platform/environment-variables
